@@ -1,0 +1,462 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: Student Performance AI API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+  - name: auth
+  - name: students
+  - name: analytics
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Validate a demo account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Login result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResult"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /students:
+    get:
+      operationId: getStudents
+      tags: [students]
+      summary: List students with current academic metrics
+      responses:
+        "200":
+          description: Student list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StudentSummary"
+  /students/{studentId}:
+    get:
+      operationId: getStudent
+      tags: [students]
+      summary: Get a student's complete profile
+      parameters:
+        - $ref: "#/components/parameters/StudentId"
+      responses:
+        "200":
+          description: Student profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentDetail"
+        "404":
+          description: Student not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /students/{studentId}/behavior:
+    get:
+      operationId: getStudentBehavior
+      tags: [analytics]
+      summary: Get timestamped behavior observations
+      parameters:
+        - $ref: "#/components/parameters/StudentId"
+      responses:
+        "200":
+          description: Weekly behavior trend
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BehaviorPoint"
+  /students/{studentId}/recommendations:
+    get:
+      operationId: getRecommendations
+      tags: [analytics]
+      summary: Get personalized recommendations
+      parameters:
+        - $ref: "#/components/parameters/StudentId"
+      responses:
+        "200":
+          description: Recommendations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Recommendation"
+  /predict:
+    post:
+      operationId: predictPerformance
+      tags: [analytics]
+      summary: Predict academic performance from metrics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PredictionInput"
+      responses:
+        "200":
+          description: Academic prediction
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PredictionResult"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /explain:
+    post:
+      operationId: explainPrediction
+      tags: [analytics]
+      summary: Explain a prediction with feature contributions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PredictionInput"
+      responses:
+        "200":
+          description: Feature contributions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExplanationResult"
+  /warnings:
+    get:
+      operationId: getWarnings
+      tags: [analytics]
+      summary: Get early warning alerts
+      responses:
+        "200":
+          description: Early warning alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Warning"
+  /dashboard:
+    get:
+      operationId: getDashboardSummary
+      tags: [analytics]
+      summary: Get teacher dashboard aggregates
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+  /students/create:
+    post:
+      operationId: createStudentAccount
+      tags: [students]
+      summary: Create a student account and initial data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudentAccountInput"
+      responses:
+        "201":
+          description: Student account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentAccount"
+        "400":
+          description: Invalid account data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /students/{studentId}/account:
+    put:
+      operationId: updateStudentAccount
+      tags: [students]
+      summary: Update student profile and performance data
+      parameters:
+        - $ref: "#/components/parameters/StudentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudentAccountUpdate"
+      responses:
+        "200":
+          description: Updated student account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentAccount"
+        "404":
+          description: Student not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /ml/train:
+    post:
+      operationId: trainMlModel
+      tags: [analytics]
+      summary: Train the Random Forest model from valid Supabase records
+      responses:
+        "200":
+          description: Training result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingResult"
+  /ml/status:
+    get:
+      operationId: getMlStatus
+      tags: [analytics]
+      summary: Get the last model training status
+      responses:
+        "200":
+          description: Model status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingResult"
+components:
+  parameters:
+    StudentId:
+      name: studentId
+      in: path
+      required: true
+      schema:
+        type: string
+  schemas:
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string }
+    ErrorResponse:
+      type: object
+      required: [success, message]
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+    LoginInput:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string, minLength: 1 }
+        password: { type: string, minLength: 1 }
+    AuthResult:
+      type: object
+      required: [success, role, displayName]
+      properties:
+        success: { type: boolean }
+        role:
+          type: string
+          enum: [teacher, student]
+        displayName: { type: string }
+        studentId: { type: ["string", "null"] }
+    PredictionInput:
+      type: object
+      required: [attendance, assignmentScore, quizScore, examScore, learningActivity]
+      properties:
+        attendance: { type: number, minimum: 0, maximum: 100 }
+        assignmentScore: { type: number, minimum: 0, maximum: 100 }
+        quizScore: { type: number, minimum: 0, maximum: 100 }
+        examScore: { type: number, minimum: 0, maximum: 100 }
+        learningActivity: { type: number, minimum: 0, maximum: 100 }
+        submissionConsistency: { type: number, minimum: 0, maximum: 100, default: 80 }
+    PredictionResult:
+      type: object
+      required: [prediction, riskLevel, confidence, demoLabel]
+      properties:
+        prediction:
+          type: string
+          enum: [High Performance, Average Performance, At Risk]
+        riskLevel:
+          type: string
+          enum: [Low, Medium, High]
+        confidence: { type: number }
+        demoLabel: { type: string }
+    ExplanationResult:
+      type: object
+      required: [prediction, contributions, demoLabel]
+      properties:
+        prediction: { type: string }
+        contributions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Contribution"
+        demoLabel: { type: string }
+    Contribution:
+      type: object
+      required: [feature, value, direction]
+      properties:
+        feature: { type: string }
+        value: { type: number }
+        direction:
+          type: string
+          enum: [positive, negative]
+    StudentSummary:
+      type: object
+      required: [studentId, name, course, year, attendance, assignmentScore, quizScore, examScore, learningActivity, submissionConsistency, prediction, riskLevel]
+      properties:
+        studentId: { type: string }
+        name: { type: string }
+        email: { type: string }
+        course: { type: string }
+        year: { type: number }
+        attendance: { type: number }
+        assignmentScore: { type: number }
+        quizScore: { type: number }
+        examScore: { type: number }
+        learningActivity: { type: number }
+        submissionConsistency: { type: number }
+        prediction: { type: string }
+        riskLevel: { type: string, enum: [Low, Medium, High] }
+    StudentDetail:
+      allOf:
+        - $ref: "#/components/schemas/StudentSummary"
+        - type: object
+          required: [behavior, contributions, recommendations]
+          properties:
+            behavior:
+              type: array
+              items:
+                $ref: "#/components/schemas/BehaviorPoint"
+            contributions:
+              type: array
+              items:
+                $ref: "#/components/schemas/Contribution"
+            recommendations:
+              type: array
+              items:
+                $ref: "#/components/schemas/Recommendation"
+    BehaviorPoint:
+      type: object
+      required: [week, attendance, assignment, quiz, learning]
+      properties:
+        week: { type: string }
+        attendance: { type: number }
+        assignment: { type: number }
+        quiz: { type: number }
+        learning: { type: number }
+    Recommendation:
+      type: object
+      required: [title, detail, tone]
+      properties:
+        title: { type: string }
+        detail: { type: string }
+        tone: { type: string, enum: [positive, focus, neutral] }
+    Warning:
+      type: object
+      required: [studentId, studentName, riskLevel, message, indicator]
+      properties:
+        studentId: { type: string }
+        studentName: { type: string }
+        riskLevel: { type: string, enum: [Low, Medium, High] }
+        message: { type: string }
+        indicator: { type: string }
+    DashboardSummary:
+      type: object
+      required: [totalStudents, highRisk, mediumRisk, lowRisk, averageAttendance, averagePerformance, recentAlerts]
+      properties:
+        totalStudents: { type: number }
+        highRisk: { type: number }
+        mediumRisk: { type: number }
+        lowRisk: { type: number }
+        averageAttendance: { type: number }
+        averagePerformance: { type: number }
+        recentAlerts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Warning"
+    StudentAccountInput:
+      type: object
+      required: [studentId, name, email, username, password, course, department, year, semester, attendance, assignmentScore, quizScore, examScore, learningActivity, submissionConsistency, recentPerformance, behavioralTrend, target]
+      properties:
+        studentId: { type: string, minLength: 1 }
+        name: { type: string, minLength: 1 }
+        email: { type: string, minLength: 3 }
+        username: { type: string, minLength: 1 }
+        password: { type: string, minLength: 6 }
+        course: { type: string }
+        department: { type: string }
+        year: { type: number }
+        semester: { type: number }
+        attendance: { type: number, minimum: 0, maximum: 100 }
+        assignmentScore: { type: number, minimum: 0, maximum: 100 }
+        quizScore: { type: number, minimum: 0, maximum: 100 }
+        examScore: { type: number, minimum: 0, maximum: 100 }
+        learningActivity: { type: number, minimum: 0, maximum: 100 }
+        submissionConsistency: { type: number, minimum: 0, maximum: 100 }
+        recentPerformance: { type: number, minimum: 0, maximum: 100 }
+        behavioralTrend: { type: number, minimum: -100, maximum: 100 }
+        target:
+          type: string
+          enum: [High Performance, Average Performance, At Risk]
+    StudentAccountUpdate:
+      allOf:
+        - $ref: "#/components/schemas/StudentAccountInput"
+    StudentAccount:
+      type: object
+      required: [studentId, name, email, username, course, department, year, semester, savedAt]
+      properties:
+        studentId: { type: string }
+        name: { type: string }
+        email: { type: string }
+        username: { type: string }
+        course: { type: string }
+        department: { type: string }
+        year: { type: number }
+        semester: { type: number }
+        savedAt: { type: string }
+    TrainingResult:
+      type: object
+      required: [status, message, trainingRecords, featuresUsed, model, accuracy, lastTrained]
+      properties:
+        status:
+          type: string
+          enum: [Completed, Insufficient Data, Not Trained]
+        message: { type: string }
+        trainingRecords: { type: number }
+        featuresUsed: { type: number }
+        model: { type: string }
+        accuracy: { type: number }
+        lastTrained: { type: ["string", "null"] }
