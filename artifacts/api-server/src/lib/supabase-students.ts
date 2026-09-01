@@ -1,5 +1,6 @@
 import type { StudentRecord } from "../data/student-data";
 import { isSupabaseConfigured, supabaseJson } from "./supabase";
+import { logger } from "./logger";
 
 type SupabaseStudentRow = {
   student_id: string;
@@ -117,6 +118,10 @@ export async function loadStudentsFromSupabase(): Promise<StudentRecord[]> {
   ]);
 
   if (!studentsResult.response.ok || !Array.isArray(studentsResult.data)) {
+    logger.error(
+      { status: studentsResult.response.status, data: studentsResult.data },
+      "Supabase students request failed",
+    );
     throw new Error("Could not load students from Supabase.");
   }
 
